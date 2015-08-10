@@ -1,5 +1,7 @@
 'use strict';
 
+var path = require('path');
+var fs = require('fs');
 var gulp = require('gulp');
 var es = require('event-stream');
 var clean = require('gulp-clean');
@@ -16,6 +18,8 @@ var header = require('gulp-header');
 var pkg = require('./package.json');
 var order = require('gulp-order');
 var jshint = require('gulp-jshint');
+var through2 = require('through2');
+var jsyaml = require('js-yaml');
 var banner = ['/**',
   ' * <%= pkg.name %> - <%= pkg.description %>',
   ' * @version v<%= pkg.version %>',
@@ -24,12 +28,41 @@ var banner = ['/**',
   ' */',
   ''].join('\n');
 
+var outputFolder = process.env.OUTPUT_PATH || ".";
+var inputFolder = process.env.INPUT_PATH || ".";
+var distFolder = path.join(outputFolder, ".", "dist");
+var inputFile = path.join(inputFolder, process.env.INPUT_FILE || "swagger.yaml");
+
+/**
+ * Convert YAML to JSON
+ */
+
+var yamlToJSON = function(){
+    return through2.obj(function (file, enc, cb) {
+        var yaml = jsyaml.load(file.contents);
+        var contents = JSON.stringify(yaml);
+        file.contents = new Buffer(contents);
+        file.path = file.path.replace(".yaml", ".json");
+        cb(null, file);
+    });
+};
+
+gulp.task('yaml-to-json', function() {
+    if(!fs.existsSync(inputFile)){
+        console.warn("No input file ['"+inputFile+"'] was found");
+        return;
+    }
+    return gulp.src(inputFile)
+        .pipe(yamlToJSON())
+        .pipe(gulp.dest(distFolder));
+});
+
 /**
  * Clean ups ./dist folder
  */
 gulp.task('clean', function() {
   return gulp
-    .src('./dist', {read: false})
+    .src(distFolder, {read: false})
     .pipe(clean({force: true}))
     .on('error', log);
 });
@@ -74,12 +107,12 @@ gulp.task('dist', ['clean','lint'], function() {
     .pipe(concat('swagger-ui.js'))
     .pipe(wrap('(function(){<%= contents %>}).call(this);'))
     .pipe(header(banner, { pkg: pkg } ))
-    .pipe(gulp.dest('./dist'))
+    .pipe(gulp.dest(distFolder))
     .pipe(uglify())
     .on('error', log)
     .pipe(rename({extname: '.min.js'}))
     .on('error', log)
-    .pipe(gulp.dest('./dist'))
+    .pipe(gulp.dest(distFolder))
     .pipe(connect.reload());
 });
 
@@ -110,19 +143,19 @@ gulp.task('copy', ['less'], function() {
   // copy JavaScript files inside lib folder
   gulp
     .src(['./lib/**/*.{js,map}'])
-    .pipe(gulp.dest('./dist/lib'))
+    .pipe(gulp.dest(path.join(distFolder, 'lib')))
     .on('error', log);
 
   // copy `lang` for translations
   gulp
     .src(['./lang/**/*.js'])
-    .pipe(gulp.dest('./dist/lang'))
+    .pipe(gulp.dest(path.join(distFolder, 'lang')))
     .on('error', log);
 
   // copy all files inside html folder
   gulp
     .src(['./src/main/html/**/*'])
-    .pipe(gulp.dest('./dist'))
+    .pipe(gulp.dest(distFolder))
     .on('error', log);
 });
 
@@ -140,7 +173,7 @@ gulp.task('watch', function() {
  */
 gulp.task('connect', function() {
   connect.server({
-    root: 'dist',
+    root: distFolder,
     livereload: true
   });
 });
