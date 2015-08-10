@@ -42,20 +42,10 @@ var yamlToJSON = function(){
         var yaml = jsyaml.load(file.contents);
         var contents = JSON.stringify(yaml);
         file.contents = new Buffer(contents);
-        file.path = file.path.replace(".yaml", ".json");
+        file.path = path.join(path.dirname(file.path), "swagger.json");
         cb(null, file);
     });
 };
-
-gulp.task('yaml-to-json', function() {
-    if(!fs.existsSync(inputFile)){
-        console.warn("No input file ['"+inputFile+"'] was found");
-        return;
-    }
-    return gulp.src(inputFile)
-        .pipe(yamlToJSON())
-        .pipe(gulp.dest(distFolder));
-});
 
 /**
  * Clean ups ./dist folder
@@ -157,6 +147,12 @@ gulp.task('copy', ['less'], function() {
     .src(['./src/main/html/**/*'])
     .pipe(gulp.dest(distFolder))
     .on('error', log);
+
+  if(fs.existsSync(inputFile)){
+    gulp.src(inputFile)
+      .pipe(yamlToJSON())
+      .pipe(gulp.dest(distFolder));
+  }
 });
 
 /**
@@ -185,3 +181,4 @@ function log(error) {
 
 gulp.task('default', ['dist', 'copy']);
 gulp.task('serve', ['connect', 'watch']);
+gulp.task('build', ['dist', 'copy']);

@@ -19,4 +19,4 @@ WORKDIR /build
 ADD     package.json    /build/package.json
 RUN     npm install
 ADD     .   /build
-CMD     ./node_modules/gulp/bin/gulp.js dist copy yaml-to-json
+CMD     ./node_modules/gulp/bin/gulp.js build 
