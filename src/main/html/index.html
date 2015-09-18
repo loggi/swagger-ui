@@ -24,11 +24,16 @@
 
   <script type="text/javascript">
     var loadSpec = function(id, url){
+        // Create DOM element that will display spec
+        var domID = "swagger-ui-container-" + id;
+
+        // Load spec JSON
         var swaggerUi = new SwaggerUi({
             url: url,
-            dom_id: "swagger-ui-" + id,
+            dom_id: domID,
             supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
-            onComplete: function(){
+            onComplete: function(a, b){
+                $("#"+domID).addClass('swagger-ui-wrap swagger-spec');
                 $('pre code').each(function(i, e) {
                     hljs.highlightBlock(e)
                 });
@@ -58,6 +63,5 @@
 
 <body class="swagger-section">
 <div id="message-bar" class="swagger-ui-wrap" data-sw-translate>&nbsp;</div>
-<div id="swagger-ui-container" class="swagger-ui-wrap"></div>
 </body>
 </html>

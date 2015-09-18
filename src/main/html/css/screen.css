@@ -126,7 +126,6 @@
   max-width: 960px;
   margin-left: auto;
   margin-right: auto;
-  margin-bottom: 20px;
 }
 .swagger-section .swagger-ui-wrap b,
 .swagger-section .swagger-ui-wrap strong {
@@ -1149,6 +1148,9 @@
 }
 .swagger-section .api-popup-actions {
   padding-top: 10px;
+}
+.swagger-spec {
+  margin-bottom: 20px;
 }
 .swagger-section .access {
   float: right;
