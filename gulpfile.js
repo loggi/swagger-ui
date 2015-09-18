@@ -1,7 +1,6 @@
 'use strict';
 
 var path = require('path');
-var fs = require('fs');
 var gulp = require('gulp');
 var es = require('event-stream');
 var clean = require('gulp-clean');
@@ -20,6 +19,7 @@ var order = require('gulp-order');
 var jshint = require('gulp-jshint');
 var through2 = require('through2');
 var jsyaml = require('js-yaml');
+var rev = require('gulp-rev');
 var banner = ['/**',
   ' * <%= pkg.name %> - <%= pkg.description %>',
   ' * @version v<%= pkg.version %>',
@@ -30,8 +30,6 @@ var banner = ['/**',
 
 var outputFolder = process.env.OUTPUT_PATH || ".";
 var inputFolder = process.env.INPUT_PATH || ".";
-var distFolder = path.join(outputFolder, ".", "dist");
-var inputFile = path.join(inputFolder, process.env.INPUT_FILE || "swagger.yaml");
 
 /**
  * Convert YAML to JSON
@@ -41,8 +39,9 @@ var yamlToJSON = function(){
     return through2.obj(function (file, enc, cb) {
         var yaml = jsyaml.load(file.contents);
         var contents = JSON.stringify(yaml);
+        var fileName = path.basename(file.path).replace('.yaml', '.json');
         file.contents = new Buffer(contents);
-        file.path = path.join(path.dirname(file.path), "swagger.json");
+        file.path = path.join(path.dirname(file.path), fileName);
         cb(null, file);
     });
 };
@@ -52,7 +51,7 @@ var yamlToJSON = function(){
  */
 gulp.task('clean', function() {
   return gulp
-    .src(distFolder, {read: false})
+    .src(outputFolder, {read: false})
     .pipe(clean({force: true}))
     .on('error', log);
 });
@@ -97,12 +96,12 @@ gulp.task('dist', ['clean','lint'], function() {
     .pipe(concat('swagger-ui.js'))
     .pipe(wrap('(function(){<%= contents %>}).call(this);'))
     .pipe(header(banner, { pkg: pkg } ))
-    .pipe(gulp.dest(distFolder))
+    .pipe(gulp.dest(outputFolder))
     .pipe(uglify())
     .on('error', log)
     .pipe(rename({extname: '.min.js'}))
     .on('error', log)
-    .pipe(gulp.dest(distFolder))
+    .pipe(gulp.dest(outputFolder))
     .pipe(connect.reload());
 });
 
@@ -129,30 +128,28 @@ gulp.task('less', ['clean'], function() {
  * Copy lib and html folders
  */
 gulp.task('copy', ['less'], function() {
-
   // copy JavaScript files inside lib folder
-  gulp
-    .src(['./lib/**/*.{js,map}'])
-    .pipe(gulp.dest(path.join(distFolder, 'lib')))
-    .on('error', log);
+  gulp.src(['./lib/**/*.{js,map}'])
+      .pipe(gulp.dest(path.join(outputFolder, 'lib')))
+      .on('error', log);
 
   // copy `lang` for translations
-  gulp
-    .src(['./lang/**/*.js'])
-    .pipe(gulp.dest(path.join(distFolder, 'lang')))
-    .on('error', log);
+  gulp.src(['./lang/**/*.js'])
+      .pipe(gulp.dest(path.join(outputFolder, 'lang')))
+      .on('error', log);
 
   // copy all files inside html folder
-  gulp
-    .src(['./src/main/html/**/*'])
-    .pipe(gulp.dest(distFolder))
-    .on('error', log);
+  gulp.src(['./src/main/html/**/*'])
+      .pipe(gulp.dest(outputFolder))
+      .on('error', log);
 
-  if(fs.existsSync(inputFile)){
-    gulp.src(inputFile)
+  gulp.src(path.join(inputFolder, '*.yaml'))
       .pipe(yamlToJSON())
-      .pipe(gulp.dest(distFolder));
-  }
+      .pipe(rev())
+      .pipe(gulp.dest(outputFolder))
+      .pipe(rev.manifest('manifest.json'))
+      .pipe(gulp.dest(outputFolder))
+      .on('error', log);
 });
 
 /**
@@ -169,7 +166,7 @@ gulp.task('watch', function() {
  */
 gulp.task('connect', function() {
   connect.server({
-    root: distFolder,
+    root: outputFolder,
     livereload: true
   });
 });
