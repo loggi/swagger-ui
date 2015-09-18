@@ -23,38 +23,36 @@
   <script src='lib/swagger-oauth.js' type='text/javascript'></script>
 
   <script type="text/javascript">
-    $(function () {
-      var url = "swagger.json";
+    var loadSpec = function(id, url){
+        var swaggerUi = new SwaggerUi({
+            url: url,
+            dom_id: "swagger-ui-" + id,
+            supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
+            onComplete: function(){
+                $('pre code').each(function(i, e) {
+                    hljs.highlightBlock(e)
+                });
+            },
+            docExpansion: "none",
+            apisSorter: "alpha",
+            showRequestHeaders: false
+        });
+        swaggerUi.load();
+    };
 
-      window.swaggerUi = new SwaggerUi({
-        url: url,
-        dom_id: "swagger-ui-container",
-        supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
-        onComplete: function(swaggerApi, swaggerUi){
-         if(window.SwaggerTranslator) {
-            window.SwaggerTranslator.translate();
-          }
-
-          $('pre code').each(function(i, e) {
-            hljs.highlightBlock(e)
-          });
-        },
-        onFailure: function(data) {
-          log("Unable to Load SwaggerUI");
-        },
-        docExpansion: "none",
-        apisSorter: "alpha",
-        showRequestHeaders: false
-      });
-
-      window.swaggerUi.load();
-
-      function log() {
-        if ('console' in window) {
-          console.log.apply(console, arguments);
+    var loadManifest = function(data){
+        for(var key in data) {
+            if (!data.hasOwnProperty(key)) continue;
+            var id = key.replace('.json', '');
+            loadSpec(id, data[key]);
         }
-      }
-  });
+    };
+
+    $(function () {
+        $.get('manifest.json', function(response){
+            loadManifest(response);
+        });
+    });
   </script>
 </head>
 

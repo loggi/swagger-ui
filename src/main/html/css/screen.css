@@ -126,6 +126,7 @@
   max-width: 960px;
   margin-left: auto;
   margin-right: auto;
+  margin-bottom: 20px;
 }
 .swagger-section .swagger-ui-wrap b,
 .swagger-section .swagger-ui-wrap strong {
